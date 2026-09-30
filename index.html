@@ -2450,6 +2450,43 @@
       }
     }
 
+  
+    /* ===== v4.3 FEEDBACK GATE =====
+       回答前はシネマ系レイヤーを完全に停止。回答時だけ短時間表示する。 */
+    body:not(.answer-feedback-active) .holy-rays,
+    body:not(.answer-feedback-active) .aurora,
+    body:not(.answer-feedback-active) .castle-glow,
+    body:not(.answer-feedback-active) .royal-frame,
+    body:not(.answer-feedback-active) .spotlight,
+    body:not(.answer-feedback-active) .adult-flare,
+    body:not(.answer-feedback-active) .marquee-lights,
+    body:not(.answer-feedback-active) .film-bars,
+    body:not(.answer-feedback-active) .red-fog,
+    body:not(.answer-feedback-active) .horror-scratch,
+    body:not(.answer-feedback-active) .thunder,
+    body:not(.answer-feedback-active) .vignette,
+    body:not(.answer-feedback-active) .cinema-title{
+      opacity:0 !important;
+      visibility:hidden !important;
+      animation:none !important;
+    }
+
+    /* 正解演出も少し軽めに */
+    .shockwave{
+      border-width:8px !important;
+      box-shadow:
+        0 0 0 8px rgba(255,255,255,.82),
+        0 0 0 18px rgba(199,162,90,.28),
+        0 0 45px 20px rgba(255,255,255,.38) !important;
+    }
+    .laser{
+      opacity:.55 !important;
+      box-shadow:0 0 14px rgba(255,255,255,.8),0 0 24px rgba(199,162,90,.32) !important;
+    }
+    .speedline{
+      opacity:.42 !important;
+    }
+
   </style>
 </head>
 <body class="super-show">
@@ -3194,6 +3231,7 @@
 
 
   function resetCinemaLayers(){
+    document.body.classList.remove("answer-feedback-active");
     const ids = [
       "blackout","vignette","aurora","holyRays","castleGlow","redFog","royalFrame",
       "horrorScratch","filmBars","thunder","marqueeLights","curtainLeft","curtainRight",
@@ -3358,6 +3396,7 @@
 
   function themeRoyal(){
     resetCinemaLayers();
+    document.body.classList.add("answer-feedback-active");
     $("blackout").classList.add("show");
     setTimeout(()=>{
       $("castleGlow").classList.add("show");
@@ -3374,6 +3413,7 @@
 
   function themeHollywood(){
     resetCinemaLayers();
+    document.body.classList.add("answer-feedback-active");
     $("filmBars").classList.add("show");
     $("marqueeLights").classList.add("show");
     $("curtainLeft").classList.add("open");
@@ -3390,6 +3430,7 @@
 
   function themeSacred(){
     resetCinemaLayers();
+    document.body.classList.add("answer-feedback-active");
     $("blackout").classList.add("show");
     setTimeout(()=>{
       $("holyRays").classList.add("show");
@@ -3404,6 +3445,7 @@
 
   function themeParade(){
     resetCinemaLayers();
+    document.body.classList.add("answer-feedback-active");
     $("aurora").classList.add("show");
     $("marqueeLights").classList.add("show");
     showCinemaTitle("BRAVO","GALA SEQUENCE","theme-parade",1450);
@@ -3415,6 +3457,7 @@
 
   function themeCoronation(){
     resetCinemaLayers();
+    document.body.classList.add("answer-feedback-active");
     $("castleGlow").classList.add("show");
     $("royalFrame").classList.add("show");
     $("spotlight").classList.add("show");
@@ -3428,6 +3471,7 @@
 
   function themeReview(){
     resetCinemaLayers();
+    document.body.classList.add("answer-feedback-active");
     $("vignette").classList.add("show");
     $("spotlight").classList.add("show");
     $("royalFrame").classList.add("show");
@@ -3450,7 +3494,7 @@
   const BAD_THEMES = [themeHorror,themeDoom,themeCursedTheatre];
 
   function cinematicGood(){
-    [themeRoyal,themeRoyal,themeSacred,themeSacred,themeHollywood,themeParade,themeCoronation][Math.floor(Math.random()*7)]();
+    [themeRoyal,themeHollywood,themeParade][Math.floor(Math.random()*3)]();
   }
 
   function cinematicBad(){
@@ -3460,16 +3504,13 @@
 
   function megaCelebrate() {
     cinematicGood();
-    scheduleCinemaClear(1050);
+    scheduleCinemaClear(760);
     flashScreen("good");
-    if (streak >= 10) showMega(`🔥 ${streak} COMBO!`, "good");
-    shockwave(streak >= 5 ? 4 : 2);
-    lasers(streak >= 5 ? 26 : 18);
-    speedLines(streak >= 5 ? 42 : 28);
+    shockwave(1);
+    lasers(streak >= 10 ? 8 : 5);
+    speedLines(streak >= 10 ? 10 : 6);
     cardPulse("good");
 
-
-    if (streak === 5) comboBanner("5 COMBO");
     if (streak === 10) comboBanner("10 COMBO");
     if (streak === 20) comboBanner("20 COMBO");
     if (streak > 0 && streak % 25 === 0) comboBanner(`${streak} COMBO`);
@@ -3494,7 +3535,7 @@
     const words = ["CORRECTO","BIEN","正解","EXCELENTE"];
     showToast(words[Math.floor(Math.random()*words.length)], "good");
 
-    const count = 52;
+    const count = 16;
     const cx = innerWidth/2;
     const cy = innerHeight*.50;
     const chars = ["🌸","✨","★","●","◆","🎉","💫"];
@@ -3502,7 +3543,7 @@
     for (let i=0;i<count;i++) {
       const p = document.createElement("div");
       p.className = "particle";
-      const useEmoji = Math.random() < .32;
+      const useEmoji = false;
       if (useEmoji) {
         p.textContent = chars[Math.floor(Math.random()*chars.length)];
         p.style.fontSize = (12 + Math.random()*18) + "px";
@@ -3533,8 +3574,8 @@
     }
 
     document.body.animate(
-      [{filter:"brightness(1)"},{filter:"brightness(1.08)"},{filter:"brightness(1)"}],
-      {duration:260}
+      [{filter:"brightness(1)"},{filter:"brightness(1.035)"},{filter:"brightness(1)"}],
+      {duration:220}
     );
   }
 
@@ -3582,7 +3623,8 @@
 
   function speechTextForCurrent() {
     if (currentMode === "katakana") {
-      return KATA_HIRA[current] || current || "";
+      // カタカナ単字は表示字ではなく対応する音をそのまま読ませる
+      return current || "";
     }
     if (currentMode === "greetings") {
       const item = GREETINGS[Number(current.slice(1))];
@@ -3592,7 +3634,15 @@
       const item = NOUNS[Number(current.slice(1))];
       return item?.front || "";
     }
-    return current || "";
+
+    // 単独の「は」「へ」は助詞と誤解されることがあるため、
+    // 音声合成にだけカタカナを渡して音価を固定する。
+    const speechSafeKana = {
+      "は":"ハ",
+      "へ":"ヘ",
+      "を":"オ"
+    };
+    return speechSafeKana[current] || current || "";
   }
 
   function chooseJapaneseVoice() {
@@ -3858,6 +3908,7 @@
   if ("speechSynthesis" in window) {
     window.speechSynthesis.getVoices();
   }
+  resetCinemaLayers();
 
   $("modeSelect").value = currentMode;
   $("questionCount").value = String(sessionTarget);
