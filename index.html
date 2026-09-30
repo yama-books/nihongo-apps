@@ -2464,7 +2464,7 @@
       </div>
       <div class="top-actions">
         <button class="fullscreen-btn" id="fullscreenBtn">⛶ 大画面モード</button>
-        <button class="tiny" id="toggleSound" aria-pressed="true">🔊 音あり</button>
+        <button class="tiny" id="toggleSound" aria-pressed="true">🔊 音あり＋発音</button>
         <button class="tiny" id="resetBtn">↺ 記録をリセット</button>
       </div>
     </header>
@@ -3025,12 +3025,18 @@
     saveState();
     renderStats();
     showAnswerReveal(responseMs, ok);
+    const spokenText = speechTextForCurrent();
+    speakJapanese(spokenText);
 
     const slowBonus = responseMs > 1800
       ? Math.min(1200, Math.round((responseMs - 1800) * 0.42))
       : 0;
     const mistakeBonus = ok ? 0 : 850;
-    const effectiveHoldMs = Math.min(4200, answerHoldMs + slowBonus + mistakeBonus);
+    const voiceHoldMs = estimatedSpeechHoldMs(spokenText);
+    const effectiveHoldMs = Math.min(
+      5000,
+      Math.max(answerHoldMs + slowBonus + mistakeBonus, voiceHoldMs)
+    );
 
     setTimeout(() => {
       if (sessionTotal >= sessionTarget) {
@@ -3574,6 +3580,60 @@
   }
 
 
+  function speechTextForCurrent() {
+    if (currentMode === "katakana") {
+      return KATA_HIRA[current] || current || "";
+    }
+    if (currentMode === "greetings") {
+      const item = GREETINGS[Number(current.slice(1))];
+      return item?.front || "";
+    }
+    if (currentMode === "nouns") {
+      const item = NOUNS[Number(current.slice(1))];
+      return item?.front || "";
+    }
+    return current || "";
+  }
+
+  function chooseJapaneseVoice() {
+    if (!("speechSynthesis" in window)) return null;
+    const voices = window.speechSynthesis.getVoices() || [];
+    const ja = voices.filter(v => (v.lang || "").toLowerCase().startsWith("ja"));
+    if (!ja.length) return null;
+
+    const preferredPatterns = [
+      /nanami/i,
+      /haruka/i,
+      /google.*日本|google.*japanese/i,
+      /microsoft.*japanese/i
+    ];
+    for (const pattern of preferredPatterns) {
+      const found = ja.find(v => pattern.test(v.name || ""));
+      if (found) return found;
+    }
+    return ja.find(v => (v.lang || "").toLowerCase() === "ja-jp") || ja[0];
+  }
+
+  function speakJapanese(text) {
+    if (!soundOn || !text || !("speechSynthesis" in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "ja-JP";
+      utterance.rate = 0.88;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+      const voice = chooseJapaneseVoice();
+      if (voice) utterance.voice = voice;
+      window.speechSynthesis.speak(utterance);
+    } catch {}
+  }
+
+  function estimatedSpeechHoldMs(text) {
+    if (!soundOn || !text || !("speechSynthesis" in window)) return 0;
+    return Math.min(4200, 800 + Array.from(text).length * 160);
+  }
+
   function playCinematicChord(kind){
     if(!soundOn) return;
     try{
@@ -3752,7 +3812,10 @@
 
   $("toggleSound").addEventListener("click",()=>{
     soundOn=!soundOn;
-    $("toggleSound").textContent = soundOn ? "🔊 音あり" : "🔇 音なし";
+    if (!soundOn && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+    $("toggleSound").textContent = soundOn ? "🔊 音あり＋発音" : "🔇 音なし";
     $("toggleSound").setAttribute("aria-pressed",String(soundOn));
   });
 
@@ -3791,6 +3854,10 @@
     renderStats();
     nextKana();
   });
+
+  if ("speechSynthesis" in window) {
+    window.speechSynthesis.getVoices();
+  }
 
   $("modeSelect").value = currentMode;
   $("questionCount").value = String(sessionTarget);
